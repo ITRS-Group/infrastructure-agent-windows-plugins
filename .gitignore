@@ -1,0 +1,11 @@
+# Build Artifacts
+csharp/*/bin
+csharp/*/obi
+out
+
+# Development Files
+*.sw[op]
+.config
+.DS_Store
+.envrc
+.idea/
