@@ -128,6 +128,7 @@ namespace PlugNSharpTest
         [TestCase(2048, "b", "1024", "3072", false, 1)]
         [TestCase(2048, "b", "1Kb", "3Kb", false, 1)]
         [TestCase(2048, "b", "1KB", "3KB", false, 1)]
+        [TestCase(2048, "B", "1000B", "3000B", false, 1)]
         [TestCase(2048, "B", "1KB", "3KB", false, 1)]
         [TestCase(2048, "bps", "1Kbps", "3Kbps", false, 1)]
         [TestCase(2048, "Bps", "1KBps", "3KBps", false, 1)]

@@ -10,24 +10,32 @@ commands:
     use_stdin: true
 
   # Long Running Checks
-  nsc_checkcpu:
+  checkcpu: &checkcpu
     path: "{PLUGIN_DIR}/check_windows.exe check_cpu_load $ARG1$"
     long_running_key: $PATH$
-  nsc_checkcounter:
+  checkcounter: &checkcounter
     path: "{PLUGIN_DIR}/check_windows.exe check_counter $ARG1$"
     long_running_key: $NAME$
-  nsc_checkdrivesize:
+  checkdrivesize: &checkdrivesize
     path: "{PLUGIN_DIR}/check_windows.exe check_drivesize $ARG1$"
     long_running_key: $PATH$
-  nsc_checkmem:
+  checkmem: &checkmem
     path: "{PLUGIN_DIR}/check_windows.exe check_memory $ARG1$"
     long_running_key: $PATH$
-  nsc_checkservicestate:
+  checkservicestate: &checkservicestate
     path: "{PLUGIN_DIR}/check_windows.exe check_servicestate $ARG1$"
     long_running_key: $PATH$
-  nsc_checkeventlog:
+  checkeventlog: &checkeventlog
     path: "{PLUGIN_DIR}/check_windows.exe check_eventlog $ARG1$"
     long_running_key: $PATH$
+
+  # Historic nsc_* name aliases to the long-running checks
+  nsc_checkcpu: *checkcpu
+  nsc_checkcounter: *checkcounter
+  nsc_checkdrivesize: *checkdrivesize
+  nsc_checkmem: *checkmem
+  nsc_checkservicestate: *checkservicestate
+  nsc_checkeventlog: *checkeventlog
 
   # Capacity Planner Checks
   check_cp_cpu_model:

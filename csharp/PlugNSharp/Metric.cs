@@ -50,7 +50,8 @@ namespace PlugNSharp
             new UnitCollection("TebiByte", "T", Math.Pow(1024, 4)),
             new UnitCollection("GibiByte", "G", Math.Pow(1024, 3)),
             new UnitCollection("MebiByte", "M", Math.Pow(1024, 2)),
-            new UnitCollection("KibiByte", "K", 1024)
+            new UnitCollection("KibiByte", "K", 1024),
+            new UnitCollection("Byte", "", 1)
         };
 
         private static readonly UnitCollection[] decimalConversionValues = new UnitCollection[]
@@ -288,6 +289,11 @@ namespace PlugNSharp
             string parsedValue = Regex.Replace(threshold, "([^\\d.-])+", ""); // $Threshold -replace ('([^\d.])+','')
             string unitPrefix = parsedunit.Substring(0, 1);
             string unit = parsedunit.Substring(1);
+            if(parsedunit.Length == 1)
+            {
+                unitPrefix = "";
+                unit = parsedunit.Last().ToString();
+            }
 
             if (!string.Equals(uom, unit, StringComparison.OrdinalIgnoreCase))
             {

@@ -164,7 +164,7 @@ static class CheckMemory
                         name: "physical memory %",
                         value: memoryUsage,
                         uom: "%",
-                        displayName: "Physical File Memory Usage",
+                        displayName: "Physical Memory Usage",
                         warningThreshold: maxWarn,
                         criticalThreshold: maxCrit
                     );
@@ -172,7 +172,7 @@ static class CheckMemory
                         name: "physical memory",
                         value: memoryUsed,
                         uom: "B",
-                        displayName: "Physical File Memory Used"
+                        displayName: "Physical Memory Used"
                     );
                     break;
             }

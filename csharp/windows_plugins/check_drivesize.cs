@@ -22,13 +22,15 @@ static class CheckDriveSize
         var drive = string.Empty;
         string minWarnFree = null;
         string minCritFree = null;
+        string minWarnFreePct = null;
+        string minCritFreePct = null;
         Dictionary<string, string> argsDict;
         var check = new Check(
             "check_drivesize",
             helpText: "Returns size information on the specified drive\r\n"
                 + "Arguments:\r\n"
-                + "    MinWarnFree    Warning level for minimum % of free space available\r\n"
-                + "    MinCritFree    Critical level for minimum % of free space available \r\n"
+                + "    MinWarnFree    Warning level for minimum % OR total space (B, KB, MB, etc.) free space available\r\n"
+                + "    MinCritFree    Critical level for minimum % OR total space (B, KB, MB, etc.) free space available \r\n"
                 + "    Drive          The drive to return size information about"
                 
         );
@@ -53,15 +55,35 @@ static class CheckDriveSize
         foreach (var arg in argsDict)
         {
             switch (arg.Key.ToLower())
-            {
+            {   
                 case "minwarnfree":
-                {
-                    minWarnFree = arg.Value.Replace("%", "") + ":";
+                {   
+                    if(arg.Value == "")
+                    {
+                        return check.ExitUnknown("Incorrectly formatted arguments (MinWarnFree)");
+                    }
+                    if(arg.Value.Last() == '%')
+                    {
+                        minWarnFreePct = arg.Value.Replace("%", "") + ":";
+                    }
+                    else{
+                        minWarnFree = arg.Value + ":";
+                    }
                     break;
                 }
                 case "mincritfree":
                 {
-                    minCritFree = arg.Value.Replace("%", "") + ":";
+                    if(arg.Value == "")
+                    {
+                        return check.ExitUnknown("Incorrectly formatted arguments (MinCritFree)");
+                    }
+                    if(arg.Value.Last() == '%')
+                    {
+                        minCritFreePct = arg.Value.Replace("%", "") + ":";
+                    }
+                    else{
+                        minCritFree = arg.Value + ":";
+                    }
                     break;
                 }
                 case "drive":
@@ -107,8 +129,8 @@ static class CheckDriveSize
                 value: diskFreepct,
                 uom: "%",
                 displayName: "% Disk Free",
-                warningThreshold: minWarnFree,
-                criticalThreshold: minCritFree
+                warningThreshold: minWarnFreePct,
+                criticalThreshold: minCritFreePct
             );
             check.AddMetric(
                 name: drive,
