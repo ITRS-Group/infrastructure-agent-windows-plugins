@@ -41,7 +41,7 @@ static class CheckServiceState
             argsDict = callData.cmd
             .Select(line => line.Split('='))
             .Skip(1)
-            .ToDictionary(x => x[0].Trim().ToLower(), x => x.ElementAtOrDefault(1) != null ? x[1].ToLower() : "true");
+            .ToDictionary(x => x[0].Trim(), x => x.ElementAtOrDefault(1) != null ? x[1].ToLower() : "true");
         }
         catch (System.ArgumentException)
         {
@@ -57,7 +57,8 @@ static class CheckServiceState
 
         foreach (var arg in argsDict)
         {
-            switch(arg.Key)
+            var keyLower = arg.Key.ToLower();
+            switch(keyLower)
             {
                 case "help":
                 case "-h":
@@ -95,16 +96,12 @@ static class CheckServiceState
         };
 
         ManagementObjectCollection win32Services = GetWMIWin32Services();
-        var searcher = new ManagementObjectSearcher("SELECT * FROM Win32_Service");
         foreach (var service in servicesDict)
         {
-            var myService = searcher
-                .Get()
-                .Cast<ManagementObject>()
-                .ToList()
-                .Where(x => x["Name"].ToString().ToLower() == service.Key)
-                .FirstOrDefault();
-
+            var searcher = new ManagementObjectSearcher(string.Format(
+                "SELECT * FROM Win32_Service WHERE Name = '{0}' OR DisplayName = '{0}'", service.Key
+            ));
+            var myService = searcher.Get().OfType<ManagementObject>().SingleOrDefault();
             if (myService == null)
             {
                 displayMessage += service.Key + ": not found";
@@ -116,10 +113,11 @@ static class CheckServiceState
                 if (showAll || !isCorrectState)
                 {
                     displayMessage = string.Format(
-                    "{0} {1}: {2} ",
-                    displayMessage,
-                    myService["Name"],
-                    myService["State"].ToString().ToLower());
+                        "{0} {1}: {2} ",
+                        displayMessage,
+                        service.Key,
+                        myService["State"].ToString().ToLower()
+                    );
                     if (!isCorrectState)
                     {
                         exitState = Check.EXIT_STATE_CRITICAL;
