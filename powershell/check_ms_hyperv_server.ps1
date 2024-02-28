@@ -1,5 +1,5 @@
 # AUTHORS:
-#       Copyright (C) 2003-2017 Opsview Limited. All rights reserved
+#       Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
 #
 #       This file is part of Opsview
 #
@@ -265,7 +265,7 @@ class Plugin {
 }
 
 
-$check = [Plugin]::new("check_hyperv", "", "Copyright (c) 2003-2023 Opsview Limited. All rights reserved. This plugin monitors the performance of Microsoft Hyper-V.", "Plugin Options:`n
+$check = [Plugin]::new("check_hyperv", "", "Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved. This plugin monitors the performance of Microsoft Hyper-V.", "Plugin Options:`n
     -m Mode/Metric to Monitor
     -w Warning Threshold
     -c Critical Threshold

@@ -1,6 +1,6 @@
 // Company Confidential.
 // Plugin to check http calls from a Windows machine
-// Copyright (C) 2003-2023 ITRS Group Ltd. All rights reserved
+// Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
 
 using System;
 using System.Collections;

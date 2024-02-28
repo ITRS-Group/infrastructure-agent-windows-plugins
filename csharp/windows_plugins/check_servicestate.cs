@@ -1,7 +1,7 @@
 // Company Confidential.
 // Plugin to check the status of services running on a Windows box
 // Rewrite of check_services.ps1 in C#
-// Copyright (C) 2003-2023 ITRS Group Limited. All rights reserved
+// Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
 
 using System;
 using System.Collections;

@@ -1,5 +1,5 @@
 # AUTHORS:
-#       Copyright (C) 2003-2017 Opsview Limited.All rights reserved
+#       Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
 #
 #       This file is part of Opsview
 #
@@ -266,7 +266,7 @@ class Plugin {
 }
 
 
-$check = [Plugin]::new("check_mssql_database_state", "", "Copyright (c) 2003-2023 Opsview Limited. All rights reserved. This plugin monitors the stats for your MS SQL Database States.", "Plugin Options:
+$check = [Plugin]::new("check_mssql_database_state", "", "Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved. This plugin monitors the stats for your MS SQL Database States.", "Plugin Options:
         -d Database Name to check the state for
         -s Server Name - Used if have multiple servers/database engines (e.g. '\MSSQLSERVER01')`n
         Default Options:

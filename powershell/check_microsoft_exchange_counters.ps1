@@ -1,5 +1,5 @@
 # AUTHORS:
-#       Copyright (C) 2003-2018 Opsview Limited.All rights reserved
+#       Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
 #
 #       This file is part of Opsview
 #
@@ -222,7 +222,7 @@ class Plugin {
 }
 
 
-$check = [Plugin]::new("check_microsoft_exchange_counters", "", "Copyright (c) 2003-2023 Opsview Limited. All rights reserved. This plugin monitors the stats for your .", "Plugin Options:`n
+$check = [Plugin]::new("check_microsoft_exchange_counters", "", "Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved. This plugin monitors the stats for your .", "Plugin Options:`n
      arguments:`n
       -h show this help message and exit,
       -m MODE,`n

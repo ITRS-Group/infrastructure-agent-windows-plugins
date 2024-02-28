@@ -1,6 +1,6 @@
 // Company Confidential.
 // Plugin to check the memory of a Windows box
-// Copyright (C) 2003-2023 ITRS Group Ltd. All rights reserved
+// Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
 
 using System;
 using System.Collections;

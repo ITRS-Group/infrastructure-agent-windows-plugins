@@ -1,5 +1,5 @@
 # AUTHORS:
-#       Copyright (C) 2003-2023 Opsview Limited.All rights reserved
+#       Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
 #
 #       This file is part of Opsview
 #
@@ -264,7 +264,7 @@ class Plugin {
 }
 
 
-$check = [Plugin]::new("check_ms_dns", "", "Copyright (c) 2003-2017 Opsview Limited. All rights reserved. This plugin monitors the stats for your Microsoft DNS Server.", "Plugin Options:`n
+$check = [Plugin]::new("check_ms_dns", "", "Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved. This plugin monitors the stats for your Microsoft DNS Server.", "Plugin Options:`n
         -m Metric to Monitor
         -w Warning Threshold
         -c Critical Threshold`n

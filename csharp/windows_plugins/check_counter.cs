@@ -1,6 +1,6 @@
 // Company Confidential.
 // Plugin to check a custom performance counter of a Windows box
-// Copyright (C) 2003-2023 ITRS Group Limited. All rights reserved
+// Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
 
 using System;
 using System.Collections;
