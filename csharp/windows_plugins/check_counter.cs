@@ -1,4 +1,3 @@
-// Company Confidential.
 // Plugin to check a custom performance counter of a Windows box
 // Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
 
@@ -97,7 +96,10 @@ static class CheckCounter
         {
             PerformanceCounter performanceCounter = null;
             // Checks if the counter name is formatted as expected
-            var counterRegex = @"^\\([\w]+)\((.*?)\)\\(.+)$";
+            // \object(parent/instance#index)\counter
+            // the optional \\computer prefix is not supported
+            // wildcard for the instance name is not supported
+            var counterRegex = @"^\\([^(\\]+)(\(([^*)]*?)\))?\\(.+)$";
             var match = Regex.Match(customCounter, counterRegex);
             if(!match.Success)
             {
@@ -106,9 +108,9 @@ static class CheckCounter
                 );
             }
             // example: Counter=\PhysicalDisk(0 C:)\Avg. Disk Read Queue Length"
-            var category = match.Groups[1].Value;
-            var instance = match.Groups[2].Value;
-            var counter = match.Groups[3].Value;
+            var category = match.Groups[1].Value;  // object
+            var instance = match.Groups[3].Value;  // parent/instance#index
+            var counter = match.Groups[4].Value;   // counter
 
             try
             {

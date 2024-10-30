@@ -1,4 +1,3 @@
-// Company Confidential.
 // Plugin to check the memory of a Windows box
 // Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
 

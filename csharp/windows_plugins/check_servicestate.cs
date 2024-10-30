@@ -1,4 +1,3 @@
-// Company Confidential.
 // Plugin to check the status of services running on a Windows box
 // Rewrite of check_services.ps1 in C#
 // Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
@@ -76,7 +75,7 @@ static class CheckServiceState
                     break;
                 }
                 default:
-                { 
+                {
                     // if it's a service
                     if ((arg.Value == "true") || (arg.Value == "started"))
                     // when no state is given

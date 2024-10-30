@@ -1,4 +1,3 @@
-// Company Confidential.
 // Plugin for the capacity planner Opspack for a Windows box
 // Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
 
