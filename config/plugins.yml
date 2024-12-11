@@ -4,30 +4,36 @@ commands:
   # CSharp Checks
   check_http:
     path: "{PLUGIN_DIR}/check_windows.exe check_http $ARG1$"
-    use_stdin: true
+    execution_style: STDIN_ARGS
   check_ssl:
     path: "{PLUGIN_DIR}/check_windows.exe check_ssl $ARG1$"
-    use_stdin: true
+    execution_style: STDIN_ARGS
 
   # Long Running Checks
   checkcpu: &checkcpu
     path: "{PLUGIN_DIR}/check_windows.exe check_cpu_load $ARG1$"
     long_running_key: $PATH$
+    execution_style: LONGRUNNING_STDIN_ARGS
   checkcounter: &checkcounter
     path: "{PLUGIN_DIR}/check_windows.exe check_counter $ARG1$"
     long_running_key: $NAME$
+    execution_style: LONGRUNNING_STDIN_ARGS
   checkdrivesize: &checkdrivesize
     path: "{PLUGIN_DIR}/check_windows.exe check_drivesize $ARG1$"
     long_running_key: $PATH$
+    execution_style: LONGRUNNING_STDIN_ARGS
   checkmem: &checkmem
     path: "{PLUGIN_DIR}/check_windows.exe check_memory $ARG1$"
     long_running_key: $PATH$
+    execution_style: LONGRUNNING_STDIN_ARGS
   checkservicestate: &checkservicestate
     path: "{PLUGIN_DIR}/check_windows.exe check_servicestate $ARG1$"
     long_running_key: $PATH$
+    execution_style: LONGRUNNING_STDIN_ARGS
   checkeventlog: &checkeventlog
     path: "{PLUGIN_DIR}/check_windows.exe check_eventlog $ARG1$"
     long_running_key: $PATH$
+    execution_style: LONGRUNNING_STDIN_ARGS
 
   # Historic nsc_* name aliases to the long-running checks
   nsc_checkcpu: *checkcpu
@@ -40,74 +46,100 @@ commands:
   # Capacity Planner Checks
   check_cp_cpu_model:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode cpu_model $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
   check_cp_hardware_model:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode hardware_model $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
   check_cp_hardware_vendor:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode hardware_vendor $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
   check_cp_filesystem_capacity:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode filesystem_capacity $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
   check_cp_filesystem_utilization:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode filesystem_utilization $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
   check_cp_os:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode os_version $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
   check_cp_server_specification:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode server_specification $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
   check_cp_server_utilization:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode server_utilization $ARG1$"
+    execution_style: COMMAND_LINE_ARGS
 
   # Powershell Checks
   check_active_directory:
     path: "{PLUGIN_DIR}/check_active_directory.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_clustergroup:
     path: "{PLUGIN_DIR}/check_clustergroup.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   checkfileage: &check_file_age  # Historic name
     path: "{PLUGIN_DIR}/checkfileage.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_file_age: *check_file_age
   check_microsoft_exchange2013_backpressure:
     path: "{PLUGIN_DIR}/check_microsoft_exchange2013_backpressure.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_microsoft_exchange2016_backpressure:
     path: "{PLUGIN_DIR}/check_microsoft_exchange2016_backpressure.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_microsoft_exchange_counters:
     path: "{PLUGIN_DIR}/check_microsoft_exchange_counters.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_microsoft_exchange:
     path: "{PLUGIN_DIR}/check_microsoft_exchange.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_mountpoint:
     path: "{PLUGIN_DIR}/check_mountpoint.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_ms_dns:
     path: "{PLUGIN_DIR}/check_ms_dns.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_ms_hyperv_server:
     path: "{PLUGIN_DIR}/check_ms_hyperv_server.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_ms_iis:
     path: "{PLUGIN_DIR}/check_ms_iis.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_msmq:
     path: "{PLUGIN_DIR}/check_msmq.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_ms_sql_database_states:
     path: "{PLUGIN_DIR}/check_ms_sql_database_states.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_ms_sql_performance:
     path: "{PLUGIN_DIR}/check_ms_sql_performance.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_ms_sql_system:
     path: "{PLUGIN_DIR}/check_ms_sql_system.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_services:
     path: "{PLUGIN_DIR}/check_services.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_windows_base:
     path: "{PLUGIN_DIR}/check_windows_base.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
   check_windows_updates:
     path: "{PLUGIN_DIR}/check_windows_updates.ps1 $ARG1$"
     runtime: powershell
+    execution_style: COMMAND_LINE_ARGS
