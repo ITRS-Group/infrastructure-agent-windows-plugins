@@ -13,7 +13,7 @@ For more information please see the Agent GitHub repositories at:
    1. [Christian Kaufmann](#Christian-Kaufmann)
 
 ## ITRS Group
-**Copyright:** Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
+**Copyright:** Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved
 
 **License:** [BSD 3-Clause License](licenses/BSD-3.0)
 

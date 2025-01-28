@@ -1,5 +1,5 @@
 // Plugin for the capacity planner Opspack for a Windows box
-// Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
+// Copyright (C) 2003-2025 ITRS Group Limited. All rights reserved
 
 using System;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ class CheckCapacityPlanner
     const int CounterSleepTime = 1000; // 1 Second (Same as default SampleInterval in PowerShell's Get-Counter)
 
     private const string DescriptionText = @"
-Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved.
+Copyright (C) 2003-2025 ITRS Group Limited. All rights reserved.
 This plugin produces statistics for capacity planner for your Windows system.";
 
     private const string VersionNumber = "1.0.0";

@@ -1,5 +1,5 @@
 // Helper methods for plugins.
-// Copyright (C) 2003-2024 ITRS Group Limited. All rights reserved
+// Copyright (C) 2003-2025 ITRS Group Limited. All rights reserved
 using System.Diagnostics;
 using System.Linq;
 using System.Management;

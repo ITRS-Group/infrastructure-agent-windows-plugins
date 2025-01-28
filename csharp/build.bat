@@ -1,5 +1,5 @@
 :: Batch script to automate the compilation of the windows_agent_plugins
-:: Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved
+:: Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved
 
 @echo off
 setlocal EnableDelayedExpansion

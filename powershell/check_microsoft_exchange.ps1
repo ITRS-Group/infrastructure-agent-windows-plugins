@@ -1566,7 +1566,7 @@ function Main {
     $description = "Monitors Microsoft Agentless."
 
     $check = [Plugin]::New("check_microsoft_exchange", "",
-                           "Copyright (C) 2003-2024 ITRS Group Ltd. All rights reserved.`n$description",
+                           "Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved.`n$description",
                            "Optional arguments:
     -v, -Verbose
         Verbose mode - always display all output
