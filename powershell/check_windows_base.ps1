@@ -358,6 +358,9 @@ switch ($mode) {
             $check.ExitUnknown("No File Provided. Please specify in variables.")
         }
         $file = $file.Substring(0,1) + ':' + $file.Substring(1)
+        if (!(Test-Path "$file")) {
+            $check.ExitUnknown("File does not exist: $file")
+        }
         $file_size = ((Get-Item $file).length) / 1MB
         $check.addMetric($file + " file_size", $file_size, "MB", $warning, $critical)
     }
