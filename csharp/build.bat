@@ -34,6 +34,7 @@ set libs=PlugNSharp\*.cs Helpers\*.cs^
     %PLUGINS_DIR%\check_http.cs^
     %PLUGINS_DIR%\check_memory.cs^
     %PLUGINS_DIR%\check_servicestate.cs^
+    %PLUGINS_DIR%\check_services.cs^
     %PLUGINS_DIR%\check_ssl.cs
 
 %CSC% /define:LONG_RUNNING /win32icon:icon.ico /optimize+ /debug+ /t:exe /out:!dest! !source! !libs! || echo [ERROR] Failed to compile !dest! && exit /B 1

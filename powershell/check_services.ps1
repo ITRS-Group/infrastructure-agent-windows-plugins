@@ -4,7 +4,7 @@
 This is a Powershell script to check status of Windows Services
 
 .DESCRIPTION
-This script will check the status of the Windows Services. When you do not specify services using -ServiceName parameter script will check all Services. You can exclude Services (-ExcludeService), Service State (-ExcludeService-State), Service Status (-ExcludeStatus) and ServiceStartMode (ExcludeStartMode).
+This script will check the status of the Windows Services. When you do not specify Services or Service Start Modes using the -ServiceName parameter and/or the -StartMode parameter, the script will check all Services. You can exclude Services (-ExcludeService), Service State (-ExcludeState) and Service Status (-ExcludeStatus).
 
 .EXAMPLE
 ./check_service.ps1
@@ -52,7 +52,7 @@ $StatusList = [ordered]@{
 }
 
 if ($help) {
-    Get-Help $MyInvocation.MyCommand.Definition 
+    Get-Help $MyInvocation.MyCommand.Definition
     exit 3
 }
 

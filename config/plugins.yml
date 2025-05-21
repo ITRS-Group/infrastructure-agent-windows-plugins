@@ -34,6 +34,10 @@ commands:
     path: "{PLUGIN_DIR}/check_windows.exe check_eventlog $ARG1$"
     long_running_key: $PATH$
     execution_style: LONGRUNNING_STDIN_ARGS
+  checkservices:
+    path: "{PLUGIN_DIR}/check_windows.exe check_services $ARG1$"
+    long_running_key: $PATH$
+    execution_style: LONGRUNNING_STDIN_ARGS
 
   # Historic nsc_* name aliases to the long-running checks
   nsc_checkcpu: *checkcpu

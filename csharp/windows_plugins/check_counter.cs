@@ -97,20 +97,45 @@ static class CheckCounter
             PerformanceCounter performanceCounter = null;
             // Checks if the counter name is formatted as expected
             // \object(parent/instance#index)\counter
-            // the optional \\computer prefix is not supported
-            // wildcard for the instance name is not supported
-            var counterRegex = @"^\\([^(\\]+)(\(([^*)]*?)\))?\\(.+)$";
+            // The optional \\computer prefix is not supported
+            // Wildcards for the overall instance name is not supported, only the special exception below for disk checks
+            // Example: Counter=\PhysicalDisk(0 C:)\Avg. Disk Read Queue Length"
+            var counterRegex = @"^\\([^(\\]+)(\((\* )?([^*)]*?)\))?\\(.+)$";
             var match = Regex.Match(customCounter, counterRegex);
-            if(!match.Success)
+            if (!match.Success)
             {
                 return check.ExitUnknown(
                     string.Format("Incorrectly formatted counter '{0}'", customCounter)
                 );
             }
-            // example: Counter=\PhysicalDisk(0 C:)\Avg. Disk Read Queue Length"
+
             var category = match.Groups[1].Value;  // object
-            var instance = match.Groups[3].Value;  // parent/instance#index
-            var counter = match.Groups[4].Value;   // counter
+            var instance = "";
+            var counter = match.Groups[5].Value;   // counter
+            if (match.Groups[3].Value == "* ")
+            {
+                // Contains a wildcard
+                // This implementation is for backwards compatibility on customer disk checks only,
+                // to match the disk index, and will return only the first match found
+                // Example: Counter=\PhysicalDisk(* C:)\Avg. Disk Read Queue Length"
+                instance = match.Groups[3].Value + match.Groups[4].Value;  // parent/instance#index
+                var pattern = instance.Replace("* ", "^.* ") + "$";
+                PerformanceCounterCategory pcc = new PerformanceCounterCategory(category);
+                string[] categoryInstances = pcc.GetInstanceNames();
+                foreach (string inst in categoryInstances)
+                {
+                    var found = Regex.Match(inst, pattern);
+                    if (found.Success)
+                    {
+                        instance = inst;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                instance = match.Groups[4].Value;  // parent/instance#index
+            }
 
             try
             {

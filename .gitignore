@@ -1,6 +1,7 @@
 # Build Artifacts
 csharp/*/bin
-csharp/*/obi
+csharp/*/obj
+csharp/plugins/
 out
 
 # Development Files

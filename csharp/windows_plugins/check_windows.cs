@@ -27,9 +27,10 @@ static class CheckWindows
     const string CHECK_SERVICESTATE = "check_servicestate";
     const string CHECK_HTTP = "check_http";
     const string CHECK_SSL = "check_ssl";
+    const string CHECK_SERVICES = "check_services";
     static readonly string[] CHECKS = {
-    	CHECK_COUNTER, CHECK_CPU_LOAD, CHECK_DRIVESIZE, CHECK_EVENTLOG,
-    	CHECK_MEMORY, CHECK_SERVICESTATE, CHECK_HTTP, CHECK_SSL,
+        CHECK_COUNTER, CHECK_CPU_LOAD, CHECK_DRIVESIZE, CHECK_EVENTLOG,
+        CHECK_MEMORY, CHECK_SERVICESTATE, CHECK_HTTP, CHECK_SSL, CHECK_SERVICES,
 	};
     const int EXIT_UNKNOWN = 3;
     const string ENV_LONG_RUNNING_PROCESS = "LONG_RUNNING_PROCESS";
@@ -61,6 +62,9 @@ static class CheckWindows
                 break;
             case CHECK_SSL:
                 CheckSsl.Run(callData);
+                break;
+            case CHECK_SERVICES:
+                CheckServices.Run(callData);
                 break;
             default:
                 throw new ExitException(EXIT_UNKNOWN, stderr: String.Format("Unknown plugin '{0}'", name));

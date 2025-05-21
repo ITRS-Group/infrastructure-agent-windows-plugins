@@ -234,8 +234,14 @@ static class CheckDriveSize
             var diskQuery = new ObjectQuery(formattedQuery);
             var mgmtObjSearcher = new ManagementObjectSearcher(namespaceScope, diskQuery);
             ManagementObjectCollection colDisks = mgmtObjSearcher.Get();
-            if ((driveMode == DriveMode.Single) && (colDisks.Count == 0)) {
+            if ((driveMode == DriveMode.Single) && (colDisks.Count == 0))
+            {
                 return check.ExitUnknown("No matching drives found");
+            }
+            else if ((driveMode == DriveMode.Others) && (colDisks.Count == 0))
+            {
+                // In this case, there are no other drives except those specifically excluded
+                return check.ExitOK("No other drives found");
             }
 
             foreach (ManagementObject selectedDisk in colDisks)

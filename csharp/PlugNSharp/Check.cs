@@ -21,7 +21,7 @@ namespace PlugNSharp
         public const int EXIT_STATE_CRITICAL = 2;
         public const int EXIT_STATE_WARNING = 1;
         public const int EXIT_STATE_OK = 0;
-        public const int DEFAULT_MAX_LENGTH = 1023;
+        public const int DEFAULT_MAX_LENGTH = 16384 - 1; // 16kB
 
         public int MaxLength { get; set; }
 

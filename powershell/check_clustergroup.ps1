@@ -23,7 +23,6 @@ http://www.opsview.com
 
 #>
 
-
 param(
     [alias("h")] [switch]$help,
     [string[]]$ClusterGroup
@@ -37,12 +36,19 @@ if ($help)
     exit 3
 }
 
-import-module failoverclusters
+try {
+    Import-Module FailoverClusters -ErrorAction Stop
+}
+catch {
+    Write-Host "UNKNOWN: Error importing FailoverClusters module"
+    Write-Error $_
+    exit 3
+}
 
 if (!$ClusterGroup)
 {
-    Get-ClusterGroup | Select-Object Name,OwnerNode,State | Sort-Object -Property Name | ForEach-Object {
-        if ($_.State -ne "Online") 
+    Get-ClusterGroup | Select-Object Name, OwnerNode, State | Sort-Object -Property Name | ForEach-Object {
+        if ($_.State -ne "Online")
         {
             if ($NagiosDescriptionCritical)
             {
@@ -51,7 +57,7 @@ if (!$ClusterGroup)
             $NagiosDescriptionCritical = $NagiosDescriptionCritical + $_.Name + " (Status: " + $_.State + ")"
             $NagiosStatus = "2"
         }
-        else 
+        else
         {
             if ($NagiosDescription)
             {
@@ -63,8 +69,8 @@ if (!$ClusterGroup)
 }
 else
 {
-    Get-ClusterGroup | Select-Object Name,OwnerNode,State | Sort-Object -Property Name | ForEach-Object {
-        if ($ClusterGroup -contains $_.Name) 
+    Get-ClusterGroup | Select-Object Name, OwnerNode, State | Sort-Object -Property Name | ForEach-Object {
+        if ($ClusterGroup -contains $_.Name)
         {
             if ($_.State -ne "Online")
             {
