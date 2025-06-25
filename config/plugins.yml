@@ -47,6 +47,9 @@ commands:
   nsc_checkservicestate: *checkservicestate
   nsc_checkeventlog: *checkeventlog
 
+  # Aliases for improved backwards compatibility with old Windows Agent
+  check_counter: *checkcounter
+
   # Capacity Planner Checks
   check_cp_cpu_model:
     path: "{PLUGIN_DIR}/check_capacity_planner.exe --mode cpu_model $ARG1$"

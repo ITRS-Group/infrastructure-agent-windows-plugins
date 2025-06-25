@@ -31,10 +31,6 @@ static class CheckDriveSize
 
     private static void ParseThreshold(Check check, string name, string value, bool isMax, ref string threshold, ref string thresholdPct)
     {
-        if (string.IsNullOrEmpty(value))
-        {
-            throw new Exception(String.Format("Incorrectly formatted arguments ({0})", name));
-        }
         string template = isMax ? "~:{0}" : "{0}:";
         if (value.Last() == '%')
         {
@@ -83,6 +79,8 @@ static class CheckDriveSize
                 + "    (Min|Max)(Warn|Crit)(Free|Used)\r\n"
                 + "                   Threshold levels for % OR total space (B, KB, MB, etc.)\r\n"
                 + "                     (e.g. MinCritFree=1GB, MaxWarnUsed=80%)\r\n"
+                + "                     Max thresholds will trigger if the space value is > than the level set\r\n"
+                + "                     Min thresholds will trigger if the space value is < than the level set\r\n"
                 + "    Drive          The drive to return size information for\r\n"
                 + "    CheckAll       Checks all drives\r\n"
                 + "    CheckAllOthers Checks all drives, but turns the Drive option into an exclude option\r\n"
@@ -113,26 +111,36 @@ static class CheckDriveSize
             {
                 switch (arg.Key.ToLower())
                 {
+                    //OP-74152: Thresholds Min|Max(Warn|Crit)(Free|Used) are ignored if the value is empty for backwards
+                    // compatibility with the Opsview Windows Agent. Revisit this in the future if we should remove.
                     case "minwarnfree":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MinWarnFree", arg.Value, false, ref warnThreshold, ref warnThresholdPct);
                         metricMode = MetricMode.Free;
                         break;
                     }
                     case "mincritfree":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MinCritFree", arg.Value, false, ref critThreshold, ref critThresholdPct);
                         metricMode = MetricMode.Free;
                         break;
                     }
                     case "maxwarnfree":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MaxWarnFree", arg.Value, true, ref warnThreshold, ref warnThresholdPct);
                         metricMode = MetricMode.Free;
                         break;
                     }
                     case "maxcritfree":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MaxCritFree", arg.Value, true, ref critThreshold, ref critThresholdPct);
                         metricMode = MetricMode.Free;
                         break;
@@ -140,24 +148,32 @@ static class CheckDriveSize
 
                     case "minwarnused":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MinWarnUsed", arg.Value, false, ref warnThreshold, ref warnThresholdPct);
                         metricMode = MetricMode.Used;
                         break;
                     }
                     case "mincritused":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MinCritUsed", arg.Value, false, ref critThreshold, ref critThresholdPct);
                         metricMode = MetricMode.Used;
                         break;
                     }
                     case "maxwarnused":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MaxWarnUsed", arg.Value, true, ref warnThreshold, ref warnThresholdPct);
                         metricMode = MetricMode.Used;
                         break;
                     }
                     case "maxcritused":
                     {
+                        if (string.IsNullOrEmpty(arg.Value))
+                            break;
                         ParseThreshold(check, "MaxCritUsed", arg.Value, true, ref critThreshold, ref critThresholdPct);
                         metricMode = MetricMode.Used;
                         break;

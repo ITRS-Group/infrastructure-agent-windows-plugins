@@ -25,61 +25,146 @@ static class CheckCounter
             helpText: "Returns information for a given counter\r\n"
                 + "Arguments:\r\n"
                 + "    Counter    Defined counter to return information on\r\n"
-                + "    MaxWarn    Value to trigger warning level\r\n"
-                + "    MaxCrit    Value to trigger critical level"
+                + "    Warn       Warning threshold (supports nagios threshold syntax)\r\n"
+                + "    MinWarn    Trigger warning if counter < than this value (numeric)\r\n"
+                + "    MaxWarn    Trigger warning if counter > than this value (numeric)\r\n"
+                + "    Crit       Critical threshold (supports nagios threshold syntax)\r\n"
+                + "    MinCrit    Trigger critical if counter < than this value (numeric)\r\n"
+                + "    MaxCrit    Trigger critical if counter > than this value (numeric)\r\n"
+                + "    Legacy     Causes MinWarn/MinCrit to trigger if counter <= their value, and MaxWarn/MaxCrit to trigger if counter >= their value\r\n"
+                + "\r\n"
+                + "Only one of (Warn, MinWarn, MaxWarn) and/or (Crit, MinCrit, MaxCrit) can be set if using thresholds.\r\n"
+                + "Use Warn or Crit for more complex thresholds.\r\n"
+                + "\r\n"
+                + "Nagios threshold syntax: https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT\r\n"
         );
         const int counterSleepTime = 1000; // 1 Second (Same as default SampleInterval in Powershell's Get-Counter)
-        string maxCrit = null;
-        string maxWarn = null;
+        string critThreshold = null;
+        string warnThreshold = null;
         string customCounter = null;
+        bool legacyMode = false;
 
         try
         {
-            var argsDict = callData.cmd
-                .Select(line => line.Split('='))
-                .Skip(1)
-                .ToDictionary(
-                    x => x[0].Trim().ToLower(),
-                    x => x.ElementAtOrDefault(1) != null ? x[1] : "true"
-                );
+            // Allow for '=' delimiter in args
+            var args = new List<string>();
+            var delim = new char[] { '=' };
+            foreach (string arg in callData.cmd)
+            {
+                var items = arg.Split(delim, 2, StringSplitOptions.None);
+                args.AddRange(items);
+            }
 
-            var argsCount = argsDict.Count();
-
-            if (argsCount == 0)
+            // First arg will be the command name, so don't consider it
+            if (args.Count <= 1)
             {
                 return check.ExitHelp();
             }
 
-            foreach (var arg in argsDict)
+            // Parse args
+            try
             {
-                switch(arg.Key)
+                // Do a first pass through args for legacy mode as this affects processing of threshold args later
+                legacyMode = args.Select(a => a.TrimStart('-').ToLower()).Contains("legacy");
+
+                // Now parse the rest of the args for everything else
+                var i = 1;
+                while (i < args.Count)
                 {
-                    case "maxcrit":
+                    switch (args[i].TrimStart('-').ToLower())
                     {
-                        maxCrit = arg.Value;
-                        break;
+                        // See threshold format docs here:
+                        // https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT
+                        //
+                        // We currently support nagios style thresholds as well as some simpler min/max thresholds,
+                        // plus a hidden "legacy" mode which switches min/max to "inclusive" rather than "exclusive",
+                        // created to make migrating easier for Cloudwave. This MUST be the first argument set, if used.
+                        case "legacy":
+                            break;  // Already handled above
+
+                        case "crit":
+                            critThreshold = ValidateAndGetThreshold(check, critThreshold, args[i + 1], false);
+                            i++;
+                            break;
+
+                        case "mincrit":
+                            critThreshold = ValidateAndGetThreshold(check, critThreshold, args[i + 1], true);
+                            i++;
+                            if (legacyMode)
+                            {
+                                // In legacy mode, this should be inclusive - this syntax means: trigger if <= value
+                                critThreshold = string.Format("@~:{0}", critThreshold);
+                            }
+                            else
+                            {
+                                // otherwise this should be exclusive - this syntax means: trigger if < value
+                                critThreshold = string.Format("{0}:", critThreshold);
+                            }
+                            break;
+
+                        case "maxcrit":
+                            critThreshold = ValidateAndGetThreshold(check, critThreshold, args[i + 1], true);
+                            i++;
+                            if (legacyMode)
+                            {
+                                // In legacy mode, this should be inclusive - this syntax means: trigger if >= value
+                                critThreshold = string.Format("@{0}:", critThreshold);
+                            }
+                            // otherwise this should be exclusive, trigger if > value,
+                            // which is the default behaviour for a lone value anyway
+                            break;
+    
+                        case "warn":
+                            warnThreshold = ValidateAndGetThreshold(check, warnThreshold, args[i + 1], false);
+                            i++;
+                            break;
+    
+                        case "minwarn":
+                            warnThreshold = ValidateAndGetThreshold(check, warnThreshold, args[i + 1], true);
+                            i++;
+                            if (legacyMode)
+                            {
+                                // In legacy mode, this should be inclusive - this syntax means: trigger if <= value
+                                warnThreshold = string.Format("@~:{0}", warnThreshold);
+                            }
+                            else
+                            {
+                                // otherwise this should be exclusive - this syntax means: trigger if < value
+                                warnThreshold = string.Format("{0}:", warnThreshold);
+                            }
+                            break;
+    
+                        case "maxwarn":
+                            warnThreshold = ValidateAndGetThreshold(check, warnThreshold, args[i + 1], true);
+                            i++;
+                            if (legacyMode)
+                            {
+                                // In legacy mode, this should be inclusive - this syntax means: trigger if >= value
+                                warnThreshold = string.Format("@{0}:", warnThreshold);
+                            }
+                            // otherwise this should be exclusive, trigger if > value,
+                            // which is the default behaviour for a lone value anyway
+                            break;
+
+                        case "counter":
+                            customCounter = args[i + 1];
+                            i++;
+                            break;
+
+                        case "h":
+                        case "help":
+                            return check.ExitHelp();
+
+                        default:
+                            return check.ExitUnknown(String.Format("Unrecognised argument ({0})", args[i]));
                     }
-                    case "maxwarn":
-                    {
-                        maxWarn = arg.Value;
-                        break;
-                    }
-                    case "counter":
-                    {
-                        customCounter = arg.Value;
-                        break;
-                    }
-                    case "help":
-                    case "-h":
-                    {
-                        check.ExitHelp();
-                        break;
-                    }
-                    default:
-                    {
-                       return check.ExitUnknown(String.Format("Unrecognised argument ({0})", arg.Key));                }
-                    }
-            };
+                    i++;
+                }
+            }
+            catch (IndexOutOfRangeException)
+            {
+                return check.ExitUnknown("Incorrectly formatted arguments");
+            }
 
             if (string.IsNullOrEmpty(customCounter))
             {
@@ -156,8 +241,8 @@ static class CheckCounter
                 value: performanceCounter.NextValue(),
                 uom: "",
                 displayName: category + ' ' + counter,
-                warningThreshold: maxWarn,
-                criticalThreshold: maxCrit
+                warningThreshold: warnThreshold,
+                criticalThreshold: critThreshold
             );
             return check.Final();
         }
@@ -166,5 +251,41 @@ static class CheckCounter
         {
             return check.ExitUnknown(e.Message);
         }
+    }
+
+    /// <summary>
+    /// Validates threshold arguments - no more than one type of warning or critical threshold should be set,
+    /// and min/max thresholds should be numeric
+    /// </summary>
+    private static string ValidateAndGetThreshold(Check check, string currentThreshold, string newThreshold, bool validateIsNumeric)
+    {
+        if (String.IsNullOrEmpty(newThreshold))
+        {
+            check.ExitUnknown("Invalid empty threshold.");
+        }
+
+        if (currentThreshold != null)
+        {
+            check.ExitUnknown(
+                "Only one of (Crit, MinCrit, MaxCrit) or (Warn, MinWarn, MaxWarn) can be set if using thresholds "
+                + "(use Crit/Warn for more complex thresholds)."
+            );
+        }
+
+        if (validateIsNumeric)
+        {
+            // Check if numeric - accept int/double-like values, but not using TryParse to avoid weirdness like NaN etc.
+            var numericRegex = @"^\d+(\.\d+)?$";
+            var match = Regex.Match(newThreshold, numericRegex);
+            if (!match.Success)
+            {
+                check.ExitUnknown(
+                    "Min/Max thresholds must be numeric and cannot be negative "
+                    + "(use Crit/Warn for more complex thresholds)."
+                );
+            }
+        }
+
+        return newThreshold;
     }
 }
