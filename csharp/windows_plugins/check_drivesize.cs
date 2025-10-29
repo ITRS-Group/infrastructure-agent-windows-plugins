@@ -38,6 +38,10 @@ static class CheckDriveSize
         }
         else
         {
+            if (!value.EndsWith("B", StringComparison.OrdinalIgnoreCase))
+            {
+                value += "B";
+            }
             threshold = String.Format(template, value);
         }
     }
@@ -77,21 +81,55 @@ static class CheckDriveSize
             helpText: "Returns size information on the specified drive\r\n"
                 + "Arguments:\r\n"
                 + "    (Min|Max)(Warn|Crit)(Free|Used)\r\n"
-                + "                   Threshold levels for % OR total space (B, KB, MB, etc.)\r\n"
+                + "                   Threshold levels for % OR total space B, (K or KB), (M or MB), etc.\r\n"
                 + "                     (e.g. MinCritFree=1GB, MaxWarnUsed=80%)\r\n"
                 + "                     Max thresholds will trigger if the space value is > than the level set\r\n"
                 + "                     Min thresholds will trigger if the space value is < than the level set\r\n"
-                + "    Drive          The drive to return size information for\r\n"
+                + "    Drive          The drive to return size information for (e.g Drive=C or Drive=C:)\r\n"
                 + "    CheckAll       Checks all drives\r\n"
                 + "    CheckAllOthers Checks all drives, but turns the Drive option into an exclude option\r\n"
                 + "    FilterType     The type of drives to check (FIXED, CDROM, REMOTE or REMOVABLE)"
         );
         try
         {
-            argsDict = callData.cmd
-                .Select(line => line.Split('='))
-                .Skip(1)
-                .ToDictionary(x => x[0].Trim(), x => x.ElementAtOrDefault(1) != null ? x[1] : "true");
+            var tempDict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var line in callData.cmd.Skip(1))
+            {
+                var parts = line.Split('=');
+                var key = parts[0].Trim();
+                var value = parts.ElementAtOrDefault(1) ?? "true";
+
+                if (key.Equals("drive", StringComparison.OrdinalIgnoreCase))
+                {
+                    string existing;
+                    if (!value.EndsWith(":"))
+                    {
+                        value += ":";
+                    }
+                    if (tempDict.TryGetValue("drive", out existing))
+                    {
+                        // Append new drive value to existing, comma-separated
+                        tempDict["drive"] = existing + "," + value;
+                    }
+                    else
+                    {
+                        tempDict["drive"] = value;
+                    }
+                }
+                else
+                {
+                    if (tempDict.ContainsKey(key))
+                    {
+                        throw new ArgumentException(string.Format("Duplicate argument '{0}'", key));
+                    }
+
+                    tempDict[key] = value;
+                }
+            }
+
+            argsDict = tempDict;
+
         }
         catch (System.ArgumentException)
         {
@@ -236,16 +274,24 @@ static class CheckDriveSize
             }
             else if (driveMode == DriveMode.Single)
             {
-                formattedQuery = string.Format(
-                    "SELECT * FROM Win32_LogicalDisk WHERE DeviceId = '{0}'", drive
-                );
+                var drives = drive
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(d => String.Format("DeviceId = '{0}'", d.Trim().ToUpper()));
+
+                string whereClause = string.Join(" OR ", drives);
+
+                formattedQuery = String.Format("SELECT * FROM Win32_LogicalDisk WHERE {0}", whereClause);
             }
             else
             {
                 // Must be DriveMode.Others
-                formattedQuery = string.Format(
-                    "SELECT * FROM Win32_LogicalDisk WHERE DeviceId != '{0}'", drive
-                );
+                var drives = drive
+                    .Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(d => String.Format("DeviceId != '{0}'", d.Trim().ToUpper()));
+
+                string whereClause = string.Join(" AND ", drives);
+
+                formattedQuery = String.Format("SELECT * FROM Win32_LogicalDisk WHERE {0}", whereClause);
             }
             var diskQuery = new ObjectQuery(formattedQuery);
             var mgmtObjSearcher = new ManagementObjectSearcher(namespaceScope, diskQuery);

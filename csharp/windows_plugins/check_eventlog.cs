@@ -1,4 +1,4 @@
-// Plugin to check the eventlog of a Windows box
+// Plugin to check the eventlog of a Microsoft Windows system
 // Copyright (C) 2003-2025 ITRS Group Limited. All rights reserved
 
 using System;
@@ -19,6 +19,68 @@ using System.ComponentModel;
 enum FilterMode { plus, minus }
 
 /// <summary>
+/// Reserved literals
+/// Used by the tokeniser to recognised reserved words when attempting to parse string literals
+/// </summary>
+public static class Reserved
+{
+    public const string And = "and";
+    public const string AuditFailure = "auditfailure";
+    public const string AuditSuccess = "auditsuccess";
+    public const string Classic = "classic";
+    public const string CorrelationHint2 = "correlationhint2";
+    public const string Count = "count";
+    public const string Critical = "critical";
+    public const string Description = "description";
+    public const string Eq = "=";
+    public const string Error = "error";
+    public const string EventId = "eventid";
+    public const string EventLogClassic = "eventlogclassic";
+    public const string EventSource = "eventsource";
+    public const string EventType = "eventtype";
+    public const string Filter = "filter";
+    public const string GE = ">=";
+    public const string Generated = "generated";
+    public const string GT = ">";
+    public const string Id = "id";
+    public const string In = "in";
+    public const string Info = "info";
+    public const string Information = "information";
+    public const string Informational = "informational";
+    public const string Keywords = "keywords";
+    public const string LE = "<=";
+    public const string Level = "level";
+    public const string LogAlways = "logalways";
+    public const string LT = "<";
+    public const string Message = "message";
+    public const string Minus = "-";
+    public const string Not = "not";
+    public const string NotIn = "not in";
+    public const string Or = "or";
+    public const string Plus = "+";
+    public const string ResponseTime = "responsetime";
+    public const string Severity = "severity";
+    public const string Source = "source";
+    public const string Sqm = "sqm";
+    public const string Type = "type";
+    public const string Verbose = "verbose";
+    public const string Warn = "warn";
+    public const string Warning = "warning";
+    public const string WdiContext = "wdicontext";
+    public const string WdiDiagnostic = "wdidiagnostic";
+    public const string Written = "written";
+
+    // all of the reserved words
+    public static string[] all = {
+        And, AuditFailure, AuditSuccess, Classic, CorrelationHint2, Count, Critical, Description,
+        Eq, Error, EventId, EventLogClassic, EventSource, EventType, Filter, GE, Generated, GT,
+        Id, In, Info, Information, Informational, Keywords, LE, Level, LogAlways, LT, Message,
+        Minus, Not, NotIn, Or, Plus, ResponseTime, Severity, Source, Sqm, Type, Verbose, Warn,
+        Warning, WdiContext, WdiDiagnostic, Written
+    };
+}
+
+/// <summary>
 /// Parses a FilterMode from a string.
 /// </summary>
 static class FilterModeParser
@@ -37,6 +99,20 @@ static class FilterModeParser
     }
 }
 
+/// <summary>
+/// Holds plus and minus filter query strings.
+/// </summary>
+class FilterHolder
+{
+    public string plus;
+    public string minus;
+
+    public FilterHolder(string plus, string minus)
+    {
+        this.plus = plus;
+        this.minus = minus;
+    }
+}
 
 /// <summary>
 /// The base class of all Filters.
@@ -47,6 +123,7 @@ abstract class FilterBase
     /// Stores the xpath for the filter.
     /// </summary>
     public string xpath;
+    public bool notted;
 
     /// <summary>
     /// Determines if the filter matches when performing code filtering.
@@ -71,11 +148,11 @@ abstract class FilterBase
 /// </summary>
 class GeneratedFilter : FilterBase
 {
-    private static readonly Regex ReTime = new Regex(@"^(\-?)(\d+)([mshdw])$");
+    private static readonly Regex ReTime = new Regex(@"^(\-?)(\d+)([smhdw])$");
 
     private static readonly HashSet<string> ValidOps = new HashSet<string>
     {
-        "<", "<=", ">", ">=", "="
+        Reserved.LT, Reserved.LE, Reserved.GT, Reserved.GE, Reserved.Eq
     };
 
     /// <summary>
@@ -84,6 +161,7 @@ class GeneratedFilter : FilterBase
     public GeneratedFilter(long milliseconds, string op)
     {
         this.xpath = String.Format("TimeCreated[timediff(@SystemTime) {0} {1}]", op, milliseconds);
+        this.notted = false;
     }
 
     /// <summary>
@@ -104,36 +182,36 @@ class GeneratedFilter : FilterBase
         switch (unit)
         {
             case 's':
-                generatedMillisecs *= 1000;  // Milliseconds in second
+                generatedMillisecs *= 1000;  // Milliseconds in a second
                 break;
             case 'm':
-                generatedMillisecs *= 60000;  // Milliseconds in minute
+                generatedMillisecs *= 60000;  // Milliseconds in a minute
                 break;
             case 'h':
-                generatedMillisecs *= 3600000;  // Milliseconds in hour
+                generatedMillisecs *= 3600000;  // Milliseconds in an hour
                 break;
             case 'd':
-                generatedMillisecs *= 86400000;  // Milliseconds in day
+                generatedMillisecs *= 86400000;  // Milliseconds in a day
                 break;
             case 'w':
-                generatedMillisecs *= 604800000;  // Milliseconds in week
+                generatedMillisecs *= 604800000;  // Milliseconds in a week
                 break;
         }
         if (isNegative)
         {
             switch (op)
             {
-                case "<":
-                    op = ">";
+                case Reserved.LT:
+                    op = Reserved.GT;
                     break;
-                case "<=":
-                    op = ">=";
+                case Reserved.LE:
+                    op = Reserved.GE;
                     break;
-                case ">":
-                    op = "<";
+                case Reserved.GT:
+                    op = Reserved.LT;
                     break;
-                case ">=":
-                    op = "<=";
+                case Reserved.GE:
+                    op = Reserved.LE;
                     break;
             }
         }
@@ -146,11 +224,12 @@ class EventIdFilter : FilterBase
     /// <summary>
     /// Creates a new instance of an EventIdFilter.
     /// </summary>
-    public EventIdFilter(List<int> eventIdList)
+    public EventIdFilter(List<int> eventIdList, bool notted)
     {
         this.xpath = JoinOrTerms(eventIdList.Select(
             eventId => String.Format("EventID={0}", eventId)
         ));
+        this.notted = notted;
     }
 
     /// <summary>
@@ -159,10 +238,12 @@ class EventIdFilter : FilterBase
     public static EventIdFilter Parse(List<string> eventIdStrList, string op)
     {
         var eventIdList = new List<int>();
+        var notted = op.Equals(Reserved.NotIn);
         switch (op)
         {
-            case "=":
-            case "in":
+            case Reserved.Eq:
+            case Reserved.In:
+            case Reserved.NotIn:
                 foreach (var idStr in eventIdStrList)
                 {
                     eventIdList.Add(int.Parse(idStr));
@@ -171,7 +252,7 @@ class EventIdFilter : FilterBase
             default:
                 throw new Exception(String.Format("Invalid event-id operator '{0}'", op));
         }
-        return new EventIdFilter(eventIdList);
+        return new EventIdFilter(eventIdList, notted);
     }
 }
 
@@ -180,11 +261,12 @@ class EventSourceFilter : FilterBase
     /// <summary>
     /// Creates a new instance of an EventSourceFilter.
     /// </summary>
-    public EventSourceFilter(List<string> eventSourceList)
+    public EventSourceFilter(List<string> eventSourceList, bool notted)
     {
         this.xpath = JoinOrTerms(eventSourceList.Select(
             eventId => String.Format("Provider[@Name='{0}']", eventId)
         ));
+        this.notted = notted;
     }
 
     /// <summary>
@@ -192,15 +274,17 @@ class EventSourceFilter : FilterBase
     /// </summary>
     public static EventSourceFilter Parse(List<string> eventSourceList, string op)
     {
+        var notted = op.Equals(Reserved.NotIn);
         switch (op)
         {
-            case "=":
-            case "in":
+            case Reserved.Eq:
+            case Reserved.In:
+            case Reserved.NotIn:
                 break;
             default:
                 throw new Exception(String.Format("Invalid event-source operator '{0}'", op));
         }
-        return new EventSourceFilter(eventSourceList);
+        return new EventSourceFilter(eventSourceList, notted);
     }
 }
 
@@ -211,6 +295,8 @@ class EventTypeFilter : FilterBase
     /// </summary>
     public EventTypeFilter(List<StandardEventLevel> eventTypeList, string op)
     {
+        this.notted = op.Equals(Reserved.NotIn);
+        if (op.Equals(Reserved.In) || op.Equals(Reserved.NotIn)) op = Reserved.Eq;
         this.xpath = JoinOrTerms(eventTypeList.Select(
             eventType => String.Format("Level {0} {1}", op, (int)eventType)
         ));
@@ -224,29 +310,29 @@ class EventTypeFilter : FilterBase
     {
         switch (eventTypeStr.ToLower())
         {
-            case "logalways":
+            case Reserved.LogAlways:
             case "0":
                 return StandardEventLevel.LogAlways;
-            case "critical":
+            case Reserved.Critical:
             case "1":
                 return StandardEventLevel.Critical;
-            case "error":
+            case Reserved.Error:
             case "2":
                 return StandardEventLevel.Error;
-            case "warn":
-            case "warning":
+            case Reserved.Warn:
+            case Reserved.Warning:
             case "3":
                 return StandardEventLevel.Warning;
-            case "info":
-            case "information":
-            case "informational":
+            case Reserved.Info:
+            case Reserved.Information:
+            case Reserved.Informational:
             case "4":
                 return StandardEventLevel.Informational;
-            case "verbose":
+            case Reserved.Verbose:
             case "5":
                 return StandardEventLevel.Verbose;
-            case "auditsuccess":
-            case "auditfailure":
+            case Reserved.AuditSuccess:
+            case Reserved.AuditFailure:
                 throw new Exception(String.Format("EventType '{0}' is now supported through the 'keywords' filter", eventTypeStr));
             default:
                 throw new Exception(String.Format("Invalid EventType '{0}'", eventTypeStr));
@@ -261,12 +347,13 @@ class EventTypeFilter : FilterBase
         var eventTypeList = new List<StandardEventLevel>();
         switch (op)
         {
-            case "<":
-            case ">":
-            case "<=":
-            case ">=":
-            case "=":
-            case "in":
+            case Reserved.LT:
+            case Reserved.GT:
+            case Reserved.LE:
+            case Reserved.GE:
+            case Reserved.Eq:
+            case Reserved.In:
+            case Reserved.NotIn:
                 foreach (var type in eventTypeStrList)
                 {
                     eventTypeList.Add(ParseSingle(type));
@@ -275,7 +362,6 @@ class EventTypeFilter : FilterBase
             default:
                 throw new Exception(String.Format("Invalid event-type operator '{0}'", op));
         }
-        if (op.Equals("in")) op = "=";
         return new EventTypeFilter(eventTypeList, op);
     }
 }
@@ -292,6 +378,7 @@ class KeywordsFilter : FilterBase
     public KeywordsFilter(List<long> keywords)
     {
         this.keywords = keywords;
+        this.notted = false;
     }
 
     /// <summary>
@@ -302,22 +389,22 @@ class KeywordsFilter : FilterBase
     {
         switch (keywordsStr.ToLower())
         {
-            case "auditfailure":
+            case Reserved.AuditFailure:
                 return (long) StandardEventKeywords.AuditFailure;
-            case "auditsuccess":
+            case Reserved.AuditSuccess:
                 return (long) StandardEventKeywords.AuditSuccess;
-            case "correlationhint2":
+            case Reserved.CorrelationHint2:
                 return (long) StandardEventKeywords.CorrelationHint2;
-            case "eventlogclassic":
-            case "classic":
-                return (long)StandardEventKeywords.EventLogClassic;
-            case "responsetime":
+            case Reserved.EventLogClassic:
+            case Reserved.Classic:
+                return (long) StandardEventKeywords.EventLogClassic;
+            case Reserved.ResponseTime:
                 return (long) StandardEventKeywords.ResponseTime;
-            case "sqm":
+            case Reserved.Sqm:
                 return (long) StandardEventKeywords.Sqm;
-            case "wdicontext":
+            case Reserved.WdiContext:
                 return (long) StandardEventKeywords.WdiContext;
-            case "wdidiagnostic":
+            case Reserved.WdiDiagnostic:
                 return (long) StandardEventKeywords.WdiDiagnostic;
             default:
                 try
@@ -340,8 +427,8 @@ class KeywordsFilter : FilterBase
         var keywordsList = new List<long>();
         switch (op)
         {
-            case "=":
-            case "in":
+            case Reserved.Eq:
+            case Reserved.In:
                 foreach (var keyword in keywordsStrList)
                 {
                     keywordsList.Add(ParseSingle(keyword));
@@ -426,14 +513,14 @@ class LogItemRecorder
             string arg = match.Groups[2].Value;
             switch (key)
             {
-                case "count":
+                case Reserved.Count:
                     return count.ToString();
-                case "description":
-                case "message":
+                case Reserved.Description:
+                case Reserved.Message:
                     var description = entry.FormatDescription() ?? FormatProperties(entry);
                     return Regex.Replace(description, "\\r|\\n|\\t|  ", " ");
-                case "generated":
-                case "written":
+                case Reserved.Generated:
+                case Reserved.Written:
                     if (!entry.TimeCreated.HasValue) return string.Empty;
                     string[] formatsToTry = { arg, RFC1123TimeFormat };
                     foreach (var format in formatsToTry)
@@ -446,22 +533,23 @@ class LogItemRecorder
                         catch (FormatException) {}
                     }
                     return entry.TimeCreated.ToString();  // We should never get here
-                case "id":
+                case Reserved.Id:
                     return entry.Id.ToString();
-                case "level":
-                case "severity":
-                case "type":
+                case Reserved.Level:
+                case Reserved.Severity:
+                case Reserved.Type:
                     try
                     {
                         return entry.LevelDisplayName;
                     }
                     catch (EventLogNotFoundException)
                     {
-                        StandardEventLevel level = (StandardEventLevel)entry.Level;
-                        return level.ToString();
+                        return entry.Level.HasValue
+                            ? ((StandardEventLevel)entry.Level.Value).ToString()
+                            : "Unknown";
                     }
-                case "source":
-                    return entry.ProviderName;
+                case Reserved.Source:
+                    return entry.ProviderName ?? "Unknown";
                 default:
                     return String.Format("%{0}%", key);
             }
@@ -569,7 +657,7 @@ static class CheckEventLog
 {
     private const int SummaryInfoLength = 128;  // Should be enough for Summary + Performance data
     private const int MaxTruncateLength = (16 * 1024) - SummaryInfoLength;  // 16K max output, allowing for summary info
-    private const string FilterPrefix = "filter";
+    private const string FilterPrefix = Reserved.Filter;
     private const string DefaultFormatPattern = "%source% %description%";
     private const string DefaultUniqueFormatPattern = DefaultFormatPattern + " (%count%)";
 
@@ -695,7 +783,9 @@ static class CheckEventLog
                                     // Not used, assumed set
                                     break;
                                 default:
-                                    filterPlusList.Add(ParseFilterString(argValue));
+                                    var queryFilters = ParseFilterString(argValue);
+                                    if (queryFilters.plus.Count() > 0) filterPlusList.Add(queryFilters.plus);
+                                    if (queryFilters.minus.Count() > 0) filterMinusList.Add(queryFilters.minus);
                                     break;
                             }
                             break;
@@ -759,14 +849,16 @@ static class CheckEventLog
                                 }
                                 else
                                 {
-                                    var queryFilter = ParseFilterString(arg);
+                                    var queryFilters = ParseFilterString(arg);
                                     if (mode == FilterMode.plus)
                                     {
-                                        filterPlusList.Add(queryFilter);
+                                        if (queryFilters.plus.Count() > 0) filterPlusList.Add(queryFilters.plus);
+                                        if (queryFilters.minus.Count() > 0) filterMinusList.Add(queryFilters.minus);
                                     }
                                     else
                                     {
-                                        filterMinusList.Add(queryFilter);
+                                        if (queryFilters.plus.Count() > 0) filterMinusList.Add(queryFilters.plus);
+                                        if (queryFilters.minus.Count() > 0) filterPlusList.Add(queryFilters.minus);
                                     }
                                 }
                             }
@@ -828,35 +920,35 @@ static class CheckEventLog
             var effectiveCodeFilterMinusList = filterIn ? codeFilterMinusList : codeFilterPlusList;
 
             EventLogQuery eventsQuery = new EventLogQuery(requiredEventLog, PathType.LogName, query.ToString());
-            EventLogReader logReader;
+            LogItemRecorder itemRecorder = LogItemRecorderFactory(unique, formatPattern);
+            int eventCount = 0;
+            bool hasCodeFilters = (effectiveCodeFilterPlusList.Count > 0) || (effectiveCodeFilterMinusList.Count > 0);
             try
             {
-                logReader = new EventLogReader(eventsQuery);
+                using (var logReader = new EventLogReader(eventsQuery))
+                {
+                    for (EventRecord eventInstance = logReader.ReadEvent();
+                        null != eventInstance; eventInstance = logReader.ReadEvent())
+                    {
+                        if (hasCodeFilters)
+                        {
+                            if (effectiveCodeFilterPlusList.Any(filter => !filter.Matches(eventInstance))
+                                || effectiveCodeFilterMinusList.Any(filter => filter.Matches(eventInstance)))
+                            {
+                                continue;
+                            }
+                        }
+                        if ((maxEvents < 0) || (eventCount < maxEvents))
+                        {
+                            itemRecorder.AddItem(eventInstance);
+                        }
+                        eventCount++;
+                    }
+                }
             }
             catch (EventLogNotFoundException)
             {
                 throw new Exception(String.Format("Invalid file: '{0}'", requiredEventLog));
-            }
-
-            LogItemRecorder itemRecorder = LogItemRecorderFactory(unique, formatPattern);
-            int eventCount = 0;
-            bool hasCodeFilters = (effectiveCodeFilterPlusList.Count > 0) || (effectiveCodeFilterMinusList.Count > 0);
-            for (EventRecord eventInstance = logReader.ReadEvent();
-                null != eventInstance; eventInstance = logReader.ReadEvent())
-            {
-                if (hasCodeFilters)
-                {
-                    if (effectiveCodeFilterPlusList.Any(filter => !filter.Matches(eventInstance))
-                    || effectiveCodeFilterMinusList.Any(filter => filter.Matches(eventInstance)))
-                    {
-                        continue;
-                    }
-                }
-                if ((maxEvents < 0) || (eventCount < maxEvents))
-                {
-                    itemRecorder.AddItem(eventInstance);
-                }
-                eventCount++;
             }
 
             check.MaxLength = maxLength;
@@ -970,29 +1062,29 @@ static class CheckEventLog
         FilterBase filter;
         switch (argName.ToLower())
         {
-            case "eventid":
-            case "id":
+            case Reserved.EventId:
+            case Reserved.Id:
                 filter = EventIdFilter.Parse(argValues, op);
                 break;
 
-            case "eventsource":
-            case "source":
+            case Reserved.EventSource:
+            case Reserved.Source:
                 filter = EventSourceFilter.Parse(argValues, op);
                 break;
 
-            case "eventtype":
-            case "type":
-            case "severity":
-            case "level":
+            case Reserved.EventType:
+            case Reserved.Type:
+            case Reserved.Severity:
+            case Reserved.Level:
                 filter = EventTypeFilter.Parse(argValues, op);
                 break;
 
-            case "generated":
-            case "written":
+            case Reserved.Generated:
+            case Reserved.Written:
                 filter = GeneratedFilter.Parse(argValues[0], op);
                 break;
 
-            case "keywords":
+            case Reserved.Keywords:
                 throw new Exception("'Keywords' are only supported via separate filter+keywords or filter-keywords args");
 
             default:
@@ -1002,11 +1094,12 @@ static class CheckEventLog
     }
 
     /// <summary>
-    /// Parses a filter expression into an XPath filter.
+    /// Parses a filter expression into plus and minus XPath filters.
     /// </summary>
-    private static string ParseFilterString(string argValue)
+    private static FilterHolder ParseFilterString(string argValue)
     {
-        var filterList = new List<string>();
+        var plusFilterList = new List<string>();
+        var minusFilterList = new List<string>();
         var tokeniser = new Tokeniser();
         try
         {
@@ -1017,11 +1110,19 @@ static class CheckEventLog
                 if (statement is OpStatement)
                 {
                     var opStatement = (OpStatement)statement;
-                    filterList.Add(ParseFilter(opStatement.name, opStatement.values, opStatement.op).xpath);
+                    var filter = ParseFilter(opStatement.name, opStatement.values, opStatement.op);
+                    if (filter.notted)
+                    {
+                        minusFilterList.Add(filter.xpath);
+                    }
+                    else
+                    {
+                        plusFilterList.Add(filter.xpath);
+                    }
                 }
                 else
                 {
-                    filterList.Add(statement.name.ToLower());
+                    plusFilterList.Add(statement.name.ToLower());
                 }
             }
         }
@@ -1029,8 +1130,8 @@ static class CheckEventLog
         {
             throw new Exception(String.Format("{0} - when evaluating filter '{1}'", e.Message, argValue), e);
         }
-        var xPathFilterStr = string.Join(" ", filterList);
-        return xPathFilterStr;
+        var xPathFilterStrs = new FilterHolder(string.Join(" ", plusFilterList), string.Join(" ", minusFilterList));
+        return xPathFilterStrs;
     }
 
     // <summary>
@@ -1093,22 +1194,20 @@ class OpStatement : Statement
 /// <summary>
 /// Parses a list of filter tokens into a list of filter statements.
 /// Statements can be either basic (e.g. '(', 'and'), which will be rendered as-is,
-///  or an operation, which get indivdiually parsed and rendered.
+/// or an operation, which get indivdiually parsed and rendered.
 /// </summary>
 static class Lexer
 {
-    /// <summary>
-    /// Parses a list of filter tokens into a list of filter statements.
-    /// Statements can be either basic (e.g. '(', 'and'), which will be rendered as-is,
-    ///  or an operation, which get individually parsed and rendered.
-    /// </summary>
     public static List<Statement> AnalyseFilters(List<string> tokenList)
     {
         var statementList = new List<Statement>();
         var parts = new List<string>();
         var consumingList = false;
+        var notted = false;
         var listItems = new List<string>();
         var bracketCount = 0;
+        var andOrCount = 0;
+        var notCount = 0;
 
         foreach (string token in tokenList)
         {
@@ -1119,7 +1218,8 @@ static class Lexer
                     case ")":
                         bracketCount--;
                         consumingList = false;
-                        statementList.Add(new OpStatement(parts[0], "in", listItems));
+                        statementList.Add(new OpStatement(parts[0], notted ? "not in" : "in", listItems));
+                        notted = false;
                         listItems.Clear();
                         parts.Clear();
                         break;
@@ -1148,8 +1248,10 @@ static class Lexer
                 var tokenLower = token.ToLower();
                 switch (tokenLower)
                 {
-                    case "and":
-                    case "or":
+                    case Reserved.And:
+                    case Reserved.Or:
+                        andOrCount++;
+                        goto case "(";
                     case "(":
                     case ")":
                         if (parts.Count > 0) throw new Exception(String.Format("Lexer: Unexpected token: '{0}'", token));
@@ -1161,17 +1263,29 @@ static class Lexer
                     default:
                         // Attempt to build up a statement (name, op, value)
                         parts.Add(token);
-                        if ((parts.Count == 2) && tokenLower.Equals("in"))
+                        if ((parts.Count == 2) && tokenLower.Equals(Reserved.In))
                         {
                             consumingList = true;
                         }
                         else if (parts.Count == 3)
                         {
-                            var name = parts[0];
-                            var op = parts[1];
-                            var value = parts[2];
-                            statementList.Add(new OpStatement(name, op, value));
-                            parts.Clear();
+                            if (tokenLower.Equals("in") && parts[1].ToLower().Equals(Reserved.Not))
+                            {
+                                consumingList = true;
+                                notted = true;
+                                notCount++;
+                            }
+                            else if (parts[1].ToLower().Equals(Reserved.Not)) {
+                                throw new Exception(String.Format("Lexer: Unexpected {0} found before {1}", parts[1], parts[2]));
+                            }
+                            else
+                            {
+                                var name = parts[0];
+                                var op = parts[1];
+                                var value = parts[2];
+                                statementList.Add(new OpStatement(name, op, value));
+                                parts.Clear();
+                            }
                         }
                         break;
                 }
@@ -1179,6 +1293,7 @@ static class Lexer
         }
         if (bracketCount > 0) throw new Exception("Lexer: Unbalanced brackets in expression");
         if (parts.Count > 0) throw new Exception(String.Format("Lexer: Incomplete statement: '{0}'", String.Join(" ", parts)));
+        if (notCount > 0 && andOrCount > 0) throw new Exception("Lexer: May not use 'not' with 'and'/'or' in the same filter");
         return statementList;
     }
 }
@@ -1195,6 +1310,9 @@ class Tokeniser
 
     public List<string> Tokenise(string argValue)
     {
+        // Unfortunately the comamnd will have passed through Python's shlex at least twice
+        // before reaching this plugin (in the executor and the agent), so any single
+        // quotes will have been stripped from the tokens.
         bool inSingleQuotes = false;
         string lastToken;
         foreach (char c in argValue)
@@ -1262,7 +1380,7 @@ class Tokeniser
         if (tokenBuilder.Length == 0) return;
         var tokenStr = tokenBuilder.ToString();
         if (!ReValidToken.IsMatch(tokenStr)) throw new Exception(String.Format("Invalid token: '{0}'", tokenStr));
-        tokenList.Add(tokenStr.Trim('\''));
+        tokenList.Add(tokenStr.Trim().Trim('\''));
         tokenBuilder.Clear();
     }
 }

@@ -16,8 +16,30 @@ using PlugNSharp;
 using Helpers;
 using PHM = Helpers.PluginHelperMethods;
 
+public class Counter
+{
+    public string name;
+    public string alias;
+
+    public Counter(string name, string alias = "")
+    {
+        this.name = name;
+        this.alias = alias;
+    }
+}
+
 static class CheckCounter
 {
+    // Regex to check if the counter name is formatted as expected
+    // \object(parent/instance#index)\counter
+    // The optional \\computer prefix is not supported
+    // Wildcard for the overall instance name is not supported, only the special exception for disk checks
+    // Example: Counter=\PhysicalDisk(0 C:)\Avg. Disk Read Queue Length"
+    private const string counterRegex = @"^\\([^(\\]+)(\((\* )?([^*)]*?)\))?\\(.+)$";
+
+    // 1 Second (Same as default SampleInterval in Powershell's Get-Counter)
+    private const int counterSleepTime = 1000;
+
     public static int Run(CallData callData)
     {
         var check = new Check(
@@ -38,17 +60,19 @@ static class CheckCounter
                 + "\r\n"
                 + "Nagios threshold syntax: https://www.monitoring-plugins.org/doc/guidelines.html#THRESHOLDFORMAT\r\n"
         );
-        const int counterSleepTime = 1000; // 1 Second (Same as default SampleInterval in Powershell's Get-Counter)
         string critThreshold = null;
         string warnThreshold = null;
-        string customCounter = null;
+        var counters = new List<Counter>();
         bool legacyMode = false;
+        bool averages = true;
+        int invalidStatus = Check.EXIT_STATE_UNKNOWN;
 
         try
         {
             // Allow for '=' delimiter in args
             var args = new List<string>();
             var delim = new char[] { '=' };
+            var counterDelim = new char[] { ':' };
             foreach (string arg in callData.cmd)
             {
                 var items = arg.Split(delim, 2, StringSplitOptions.None);
@@ -81,6 +105,18 @@ static class CheckCounter
                         // created to make migrating easier for Cloudwave. This MUST be the first argument set, if used.
                         case "legacy":
                             break;  // Already handled above
+
+                        case "showall":
+                            break;  // Backwards compatability
+
+                        case "averages":
+                            var avge = args[i + 1].ToLower();
+                            i++;
+                            if (avge == "false" || avge == "0")
+                            {
+                                averages = false;
+                            }
+                            break;  // Backwards compatability
 
                         case "crit":
                             critThreshold = ValidateAndGetThreshold(check, critThreshold, args[i + 1], false);
@@ -146,8 +182,34 @@ static class CheckCounter
                             // which is the default behaviour for a lone value anyway
                             break;
 
+                        case "invalidstatus":
+                            // The status to be returned if an invalid counter was requested
+                            switch (args[i + 1].TrimStart('-').ToLower())
+                            {
+                                case "ok":
+                                    invalidStatus = Check.EXIT_STATE_OK;
+                                    break;
+                                case "warning":
+                                    invalidStatus = Check.EXIT_STATE_WARNING;
+                                    break;
+                                case "critical":
+                                    invalidStatus = Check.EXIT_STATE_CRITICAL;
+                                    break;
+                                case "unknown":
+                                    invalidStatus = Check.EXIT_STATE_UNKNOWN;
+                                    break;
+                                default:
+                                    if (!Int32.TryParse(args[i + 1], out invalidStatus))
+                                    {
+                                        return check.ExitUnknown(String.Format("Invalid InvalidStatus ({0})", args[i + 1]));
+                                    }
+                                    break;
+                            }
+                            i++;
+                            break;
+
                         case "counter":
-                            customCounter = args[i + 1];
+                            counters.Add(new Counter(args[i + 1], ""));
                             i++;
                             break;
 
@@ -156,6 +218,14 @@ static class CheckCounter
                             return check.ExitHelp();
 
                         default:
+                            // check for counter:name
+                            var parts = args[i].Split(counterDelim, 2, StringSplitOptions.None);
+                            if ((parts.Length == 2) && (parts[0].TrimStart('-').ToLower() == "counter"))
+                            {
+                                counters.Add(new Counter(args[i + 1], parts[1]));
+                                i++;
+                                break;
+                            }
                             return check.ExitUnknown(String.Format("Unrecognised argument ({0})", args[i]));
                     }
                     i++;
@@ -166,7 +236,7 @@ static class CheckCounter
                 return check.ExitUnknown("Incorrectly formatted arguments");
             }
 
-            if (string.IsNullOrEmpty(customCounter))
+            if (counters.Count() == 0)
             {
                 return check.ExitUnknown("Missing arguments (Counter)");
             }
@@ -177,80 +247,88 @@ static class CheckCounter
             return check.ExitUnknown(e.Message);
         }
 
-        try
+        foreach (var counter in counters)
         {
-            PerformanceCounter performanceCounter = null;
-            // Checks if the counter name is formatted as expected
-            // \object(parent/instance#index)\counter
-            // The optional \\computer prefix is not supported
-            // Wildcards for the overall instance name is not supported, only the special exception below for disk checks
-            // Example: Counter=\PhysicalDisk(0 C:)\Avg. Disk Read Queue Length"
-            var counterRegex = @"^\\([^(\\]+)(\((\* )?([^*)]*?)\))?\\(.+)$";
-            var match = Regex.Match(customCounter, counterRegex);
-            if (!match.Success)
-            {
-                return check.ExitUnknown(
-                    string.Format("Incorrectly formatted counter '{0}'", customCounter)
-                );
-            }
-
-            var category = match.Groups[1].Value;  // object
-            var instance = "";
-            var counter = match.Groups[5].Value;   // counter
-            if (match.Groups[3].Value == "* ")
-            {
-                // Contains a wildcard
-                // This implementation is for backwards compatibility on customer disk checks only,
-                // to match the disk index, and will return only the first match found
-                // Example: Counter=\PhysicalDisk(* C:)\Avg. Disk Read Queue Length"
-                instance = match.Groups[3].Value + match.Groups[4].Value;  // parent/instance#index
-                var pattern = instance.Replace("* ", "^.* ") + "$";
-                PerformanceCounterCategory pcc = new PerformanceCounterCategory(category);
-                string[] categoryInstances = pcc.GetInstanceNames();
-                foreach (string inst in categoryInstances)
-                {
-                    var found = Regex.Match(inst, pattern);
-                    if (found.Success)
-                    {
-                        instance = inst;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                instance = match.Groups[4].Value;  // parent/instance#index
-            }
-
             try
             {
-                performanceCounter = PHM.GetCounter(category, counter, instance);
-            }
-            catch (System.InvalidOperationException e)
-            {
-                check.DebugLog(e.ToString());
-                return check.ExitUnknown(
-                    string.Format("Counter '{0}' not found, check path location ", customCounter)
+                PerformanceCounter performanceCounter = null;
+                var match = Regex.Match(counter.name, counterRegex);
+                if (!match.Success)
+                {
+                    return check.ExitUnknown(
+                        string.Format("Incorrectly formatted counter '{0}'", counter.name)
+                    );
+                }
+
+                var category = match.Groups[1].Value;  // object
+                var instance = "";
+                var counterName = match.Groups[5].Value;   // counter
+                if (match.Groups[3].Value == "* ")
+                {
+                    // Contains a wildcard
+                    // This implementation is for backwards compatibility on customer disk checks only,
+                    // to match the disk index, and will return only the first match found
+                    // Example: Counter=\PhysicalDisk(* C:)\Avg. Disk Read Queue Length"
+                    instance = match.Groups[3].Value + match.Groups[4].Value;  // parent/instance#index
+                    var pattern = instance.Replace("* ", "^.* ") + "$";
+                    PerformanceCounterCategory pcc = new PerformanceCounterCategory(category);
+                    string[] categoryInstances = pcc.GetInstanceNames();
+                    foreach (string inst in categoryInstances)
+                    {
+                        var found = Regex.Match(inst, pattern);
+                        if (found.Success)
+                        {
+                            instance = inst;
+                            break;
+                        }
+                    }
+                }
+                else
+                {
+                    instance = match.Groups[4].Value;  // parent/instance#index
+                }
+
+                try
+                {
+                    performanceCounter = PHM.GetCounter(category, counterName, instance);
+                }
+                catch (System.InvalidOperationException e)
+                {
+                    check.DebugLog(e.ToString());
+                    return check.Exit(
+                        invalidStatus,
+                        string.Format("Counter '{0}' not found, check path location ", counter.name)
+                    );
+                }
+
+                if (averages)
+                {
+                    // This sleep is required before the call to NextValue() for values that are averages
+                    Thread.Sleep(counterSleepTime);
+                }
+
+                check.AddMetric(
+                    name: counter.alias == "" ? counter.name : counter.alias,
+                    value: performanceCounter.NextValue(),
+                    uom: "",
+                    displayName: counter.alias == "" ? category + ' ' + counterName : counter.alias,
+                    warningThreshold: warnThreshold,
+                    criticalThreshold: critThreshold
                 );
+
+                if (averages)
+                {
+                    Thread.Sleep(counterSleepTime);
+                }
             }
-
-            Thread.Sleep(counterSleepTime);
-
-            check.AddMetric(
-                name: customCounter,
-                value: performanceCounter.NextValue(),
-                uom: "",
-                displayName: category + ' ' + counter,
-                warningThreshold: warnThreshold,
-                criticalThreshold: critThreshold
-            );
-            return check.Final();
+            catch (ExitException) { throw; }
+            catch (Exception e)
+            {
+                return check.ExitUnknown(e.Message);
+            }
         }
-        catch (ExitException) { throw; }
-        catch (Exception e)
-        {
-            return check.ExitUnknown(e.Message);
-        }
+
+        return check.Final();
     }
 
     /// <summary>
