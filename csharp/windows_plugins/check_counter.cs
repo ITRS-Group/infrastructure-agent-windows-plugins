@@ -1,5 +1,5 @@
 // Plugin to check a custom performance counter of a Windows box
-// Copyright (C) 2003-2025 ITRS Group Limited. All rights reserved
+// Copyright (C) 2003-2026 ITRS Group Limited. All rights reserved
 
 using System;
 using System.Collections;

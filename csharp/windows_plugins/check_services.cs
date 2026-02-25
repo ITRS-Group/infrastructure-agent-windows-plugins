@@ -1,7 +1,7 @@
 // Company Confidential.
 // Plugin to check the status of services running on a Windows box
 // Rewrite of OpsviewAgent check_services.ps1, when running in >= Windows V10 mode
-// Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved
+// Copyright (C) 2003-2026 ITRS Group Ltd. All rights reserved
 
 using System;
 using System.Collections;

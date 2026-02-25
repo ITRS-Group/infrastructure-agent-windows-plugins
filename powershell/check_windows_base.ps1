@@ -1,5 +1,5 @@
 # AUTHORS:
-#       Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved
+#       Copyright (C) 2003-2026 ITRS Group Ltd. All rights reserved
 #
 #       This file is part of Opsview
 #
@@ -268,7 +268,7 @@ class Plugin {
 }
 
 
-$check = [Plugin]::new("check_windows_base", "", "Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved. This plugin monitors the stats for your Windows system.", "Plugin Options:`n
+$check = [Plugin]::new("check_windows_base", "", "Copyright (C) 2003-2026 ITRS Group Ltd. All rights reserved. This plugin monitors the stats for your Windows system.", "Plugin Options:`n
         -m Metric to Monitor
         -w Warning Threshold
         -c Critical Threshold`n

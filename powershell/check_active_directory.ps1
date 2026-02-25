@@ -1,7 +1,7 @@
 <#
 Opsview Monitor check_active_directory plugin.
 
-Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved
+Copyright (C) 2003-2026 ITRS Group Ltd. All rights reserved
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ Function CreateCheckObj() {
 
 
     $script:check = [Check]::New("check_active_directory", "",
-        "Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved.`n$description",
+        "Copyright (C) 2003-2026 ITRS Group Ltd. All rights reserved.`n$description",
         "Optional arguments:
         -v, -Verbose
             Verbose mode - always display all output

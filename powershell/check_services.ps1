@@ -19,7 +19,7 @@ Check All Services and Exclude services in state Stopped
 Check Some Services and exclude those in the state Degraded
 
 .NOTES
-Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved.
+Copyright (C) 2003-2026 ITRS Group Ltd. All rights reserved.
 
 .LINK
 http://www.opsview.com

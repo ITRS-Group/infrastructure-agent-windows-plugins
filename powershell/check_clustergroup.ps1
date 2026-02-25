@@ -16,7 +16,7 @@ Check All Cluster Groups
 Check selected Cluster Groups
 
 .NOTES
-Copyright (C) 2003-2025 ITRS Group Ltd. All rights reserved.
+Copyright (C) 2003-2026 ITRS Group Ltd. All rights reserved.
 
 .LINK
 http://www.opsview.com
