@@ -164,7 +164,7 @@ Mode specific Options
         }
         catch (Exception e)
         {
-            check.ExitUnknown(e.Message);
+            check.ExitUnknown(e.Message.Trim());
         }
         return 0;
     }
@@ -177,8 +177,9 @@ Mode specific Options
         try {
             displayMessage = PHM.GetFirstMangementObjectSearchResult(
                 "select * from Win32_Processor")["Name"].ToString();
-        } catch {
-            check.ExitUnknown("Integration impacted: could not retrieve physical server cpu model");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration impacted: could not retrieve physical server cpu model ({0})", e.Message.Trim()));
         }
         check.ExitOK(displayMessage);
     }
@@ -197,15 +198,26 @@ Mode specific Options
             check.AddMessage("Windows Filesystem Storage Capacity ");
             foreach (var drive in filteredDrives)
             {
-                check.AddMetric(
-                    name: drive.Name,
-                    value: drive.TotalSize,
-                    uom: "B",
-                    displayName: drive.Name
-                );
+                if (drive.IsReady)
+                {
+                    check.AddMetric(
+                        name: drive.Name,
+                        value: drive.TotalSize,
+                        uom: "B",
+                        displayName: drive.Name
+                    );
+                } else {
+                    check.AddMetric(
+                        name: drive.Name,
+                        value: 0.0,
+                        uom: "B",
+                        displayName: string.Format("{0} (not ready)", drive.Name)
+                    );
+                }
             }
-        } catch {
-            check.ExitUnknown("Integration broken: could not retrieve physical server filesystem capacity");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration broken: could not retrieve physical server filesystem capacity ({0})", e.Message.Trim()));
         }
     }
 
@@ -223,18 +235,33 @@ Mode specific Options
             check.AddMessage("Windows Filesystem Storage Utilization ");
             foreach (var drive in filteredDrives)
             {
-                double freeSpace = drive.TotalFreeSpace;
-                double totalSpace = drive.TotalSize;
-                double percentUsed = 100.00 - (freeSpace / totalSpace) * 100;
-                check.AddMetric(
-                    name: drive.Name,
-                    value: percentUsed,
-                    uom: "%",
-                    displayName: drive.Name
-                );
+                if (drive.IsReady)
+                {
+                    double freeSpace = drive.TotalFreeSpace;
+                    double totalSpace = drive.TotalSize;
+                    double percentUsed = 0.0;
+                    if (totalSpace > 0.0)
+                    {
+                        percentUsed = 100.00 - (freeSpace / totalSpace) * 100;
+                    }
+                    check.AddMetric(
+                        name: drive.Name,
+                        value: percentUsed,
+                        uom: "%",
+                        displayName: drive.Name
+                    );
+                } else {
+                    check.AddMetric(
+                        name: drive.Name,
+                        value: 0.0,
+                        uom: "%",
+                        displayName: string.Format("{0} (not ready)", drive.Name)
+                    );
+                }
             }
-        } catch {
-            check.ExitUnknown("Integration broken: could not retrieve physical server filesystem utilization");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration broken: could not retrieve physical server filesystem utilization ({0})", e.Message.Trim()));
         }
     }
 
@@ -246,8 +273,9 @@ Mode specific Options
         try {
             displayMessage = PHM.GetFirstMangementObjectSearchResult(
                 "select * from Win32_ComputerSystem")["Model"].ToString();
-        } catch {
-            check.ExitUnknown("Integration impacted: could not retrieve physical server hardware model");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration impacted: could not retrieve physical server hardware model ({0})", e.Message.Trim()));
         }
         check.ExitOK(displayMessage);
     }
@@ -260,8 +288,9 @@ Mode specific Options
         try {
             displayMessage = PHM.GetFirstMangementObjectSearchResult(
                 "select * from Win32_ComputerSystem")["Manufacturer"].ToString();
-        } catch {
-            check.ExitUnknown("Integration impacted: could not retrieve physical server hardware vendor");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration impacted: could not retrieve physical server hardware vendor ({0})", e.Message.Trim()));
         }
         check.ExitOK(displayMessage);
     }
@@ -274,8 +303,9 @@ Mode specific Options
         try {
             displayMessage = (string)Registry.LocalMachine.OpenSubKey(
                 "SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion").GetValue("ProductName");
-        } catch {
-            check.ExitUnknown("Integration impacted: could not retrieve physical server operating system");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration impacted: could not retrieve physical server operating system ({0})", e.Message.Trim()));
         }
         check.ExitOK(displayMessage);
     }
@@ -312,8 +342,9 @@ Mode specific Options
                 uom: "MHz",
                 displayName: "CPU Clock Speed"
             );
-        } catch {
-            check.ExitUnknown("Integration broken: could not retrieve physical server specification");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration broken: could not retrieve physical server specification ({0})", e.Message.Trim()));
         }
     }
 
@@ -349,15 +380,20 @@ Mode specific Options
                 double.Parse(win32OS.Properties["FreePhysicalMemory"].Value.ToString()) * 1024;
 
             double memoryUsed = memoryCapacityBytes - freePhysicalMemoryBytes;
-            double memoryUsage = Math.Round((memoryUsed / memoryCapacityBytes) * 100, 2);
+            double memoryUsage = 0.0;
+            if (memoryCapacityBytes > 0)
+            {
+                memoryUsage = Math.Round((memoryUsed / memoryCapacityBytes) * 100, 2);
+            }
             check.AddMetric(
                 name: "Memory Utilization",
                 value: memoryUsage,
                 uom: "%",
                 displayName: "Memory Utilization"
             );
-        } catch {
-            check.ExitUnknown("Integration broken: could not retrieve physical server utilization");
+        } catch (Exception e) {
+            check.ExitUnknown(
+                string.Format("Integration broken: could not retrieve physical server utilization ({0})", e.Message.Trim()));
         }
     }
 
