@@ -4,18 +4,18 @@
 This is a Powershell script to check status of Windows Services
 
 .DESCRIPTION
-This script will check the status of the Windows Services. When you do not specify Services or Service Start Modes using the -ServiceName parameter and/or the -StartMode parameter, the script will check all Services. You can exclude Services (-ExcludeService), Service State (-ExcludeState) and Service Status (-ExcludeStatus).
+This script will check the status of the Windows Services. When you do not specify Services or Service Start Modes using the -ServiceName parameter and/or the -StartMode parameter, the script will check all Services. You can exclude Services (-ExcludeService), Service State (-ExcludeState) and Service Status (-ExcludeStatus). By default, string comparison for -ServiceName and -ExcludeService is case-insensitive. Add the -CaseSensitive flag to use case-sensitive matching instead.
 
 .EXAMPLE
-./check_service.ps1
+./check_services.ps1
 Check All Services
 
 .EXAMPLE
-./check_service.ps1 -ExcludeState Stopped
+./check_services.ps1 -ExcludeState Stopped
 Check All Services and Exclude services in state Stopped
 
 .EXAMPLE
-./check_service.ps1 -ServiceName MSExchangeADTopology,MSExchangeAntispamUpdate,MSExchangeCompliance -ExcludeStatus Degraded
+./check_services.ps1 -ServiceName MSExchangeADTopology,MSExchangeAntispamUpdate,MSExchangeCompliance -ExcludeStatus Degraded
 Check Some Services and exclude those in the state Degraded
 
 .NOTES
@@ -32,7 +32,8 @@ param(
 [string[]]$ExcludeService,
 [string[]]$ExcludeState,
 [string[]]$ExcludeStatus,
-[string[]]$StartMode
+[string[]]$StartMode,
+[switch]$CaseSensitive = $false
 )
 
 $NagiosStatus = "0"
@@ -92,8 +93,14 @@ if (!$ServiceName) {
         $wildcardMatched = $false
         foreach ($wildcardservice in $excludeServiceList) {
             if($wildcardservice -match "\*") {
-                if ($_.Name -like $wildcardservice) {
-                    $wildcardMatched = $true
+                if ($CaseSensitive) {
+                    if ($_.Name -clike $wildcardservice) {
+                        $wildcardMatched = $true
+                    }
+                } else {
+                    if ($_.Name -like $wildcardservice) {
+                        $wildcardMatched = $true
+                    }
                 }
             }
         }
@@ -131,15 +138,27 @@ if (!$ServiceName) {
 
         $matchedService = $false
         foreach ($singleService in $serviceNameList) {
-            if ($_.Name -like $singleService) {
-                $matchedService = $true
+            if ($CaseSensitive) {
+                if ($_.Name -clike $singleService) {
+                    $matchedService = $true
+                }
+            } else {
+                if ($_.Name -like $singleService) {
+                    $matchedService = $true
+                }
             }
         }
 
         $matchedExcludeService = $false
         foreach ($excludeService in $excludeServiceList) {
-            if ($_.Name -like $excludeService) {
-                $matchedExcludeService=$true
+            if ($CaseSensitive) {
+                if ($_.Name -clike $excludeService) {
+                    $matchedExcludeService = $true
+                }
+            } else {
+                if ($_.Name -like $excludeService) {
+                    $matchedExcludeService = $true
+                }
             }
         }
 
